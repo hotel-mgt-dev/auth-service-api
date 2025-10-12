@@ -17,8 +17,8 @@ import java.time.Instant;
 
 public class SystemUser {
     @Id
-    @Column(name = "id", length = 80, nullable = false)
-    private Long id;
+    @Column(name = "user_id", length = 80, nullable = false)
+    private Long Userid;
 
     @Column(name = "keycloak_id", length = 80, nullable = false)
     private String keycloakId;
@@ -58,5 +58,8 @@ public class SystemUser {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @OneToOne(mappedBy = "systemUser")
+    private Otp otp;
 
 }
