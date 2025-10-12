@@ -1,10 +1,7 @@
 package com.hotel_mgt_system.auth_service_api.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -14,25 +11,25 @@ import java.time.Instant;
 @NoArgsConstructor
 @Getter
 @Setter
-
+@Builder
 public class SystemUser {
     @Id
     @Column(name = "user_id", length = 80, nullable = false)
-    private Long Userid;
+    private String Userid;
 
     @Column(name = "keycloak_id", length = 80, nullable = false)
     private String keycloakId;
 
-    @Column(name = "first_name", length = 80, nullable = false)
+    @Column(name = "first_name", length = 100, nullable = false)
     private String firstName;
 
-    @Column(name = "last_name", length = 80, nullable = false)
+    @Column(name = "last_name", length = 100, nullable = false)
     private String lastName;
 
     @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
-    @Column(name = "contact", length = 20)
+    @Column(name = "contact", length = 10)
     private String contact;
 
     @Column(name = "is_active")
