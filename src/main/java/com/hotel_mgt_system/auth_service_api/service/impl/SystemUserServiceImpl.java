@@ -11,10 +11,13 @@ import com.hotel_mgt_system.auth_service_api.repository.SystemUserRepository;
 import com.hotel_mgt_system.auth_service_api.service.SystemUserService;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -72,5 +75,25 @@ public class SystemUserServiceImpl implements SystemUserService {
         }
 
 
+
+    }
+    
+    //the user will be created in keycloak
+
+    private  UserRepresentation mapUserRepository(SystemUserRequestDto systemUserRequestDto){
+        UserRepresentation user = new UserRepresentation();
+        user.setFirstName(systemUserRequestDto.getFirstName());
+        user.setLastName(systemUserRequestDto.getLastName());
+        user.setEmail(systemUserRequestDto.getEmail());
+        user.setUsername(systemUserRequestDto.getEmail());
+        user.setEnabled(false);
+        user.setEmailVerified(false);
+        List<CredentialRepresentation> credList = new ArrayList<>();
+        CredentialRepresentation cred = new CredentialRepresentation();
+        cred.setTemporary(false);
+        cred.setValue(systemUserRequestDto.getPassword());
+        credList.add(cred);
+        user.setCredentials(credList);
+        return user;
     }
 }
