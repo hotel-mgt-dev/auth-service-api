@@ -9,16 +9,18 @@ import com.hotel_mgt_system.auth_service_api.exception.DuplicateEntryException;
 import com.hotel_mgt_system.auth_service_api.repository.OtpRepository;
 import com.hotel_mgt_system.auth_service_api.repository.SystemUserRepository;
 import com.hotel_mgt_system.auth_service_api.service.SystemUserService;
+import com.hotel_mgt_system.auth_service_api.util.OtpGenerator;
+import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.Instant;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class SystemUserServiceImpl implements SystemUserService {
     private final SystemUserRepository systemUserRepository;
     private final KeycloakSecurityUtil keycloakSecurityUtil;
     private final OtpRepository otpRepository;
+    private final OtpGenerator otpGenerator;
 
     @Override
     public void createSystemUser(SystemUserRequestDto systemUserRequestDto) {
@@ -63,24 +66,62 @@ public class SystemUserServiceImpl implements SystemUserService {
             } else {
                 throw new DuplicateEntryException("User already exists");
             }
-        }else {
+        } else {
             Optional<SystemUser> selectedSystemUserFromAuthService = systemUserRepository.findByEmail(systemUserRequestDto.getEmail());
             if (selectedSystemUserFromAuthService.isPresent()) {
-                Optional<Otp> selectedOtp = otpRepository.findBySystemUserId(selectedSystemUserFromAuthService.get().getUserid());
+                Optional<Otp> selectedOtp = otpRepository.findBySystemUserId(selectedSystemUserFromAuthService.get().getUserId());
                 if (selectedOtp.isPresent()) {
                     otpRepository.deleteById(selectedOtp.get().getPropertyId());
                 }
-                systemUserRepository.deleteById(selectedSystemUserFromAuthService.get().getUserid());
+                systemUserRepository.deleteById(selectedSystemUserFromAuthService.get().getUserId());
             }
         }
 
+        //create user in keycloak
 
+        UserRepresentation userRepresentation = mapUserRepository(systemUserRequestDto);
+        Response response = keycloak.realm(realm).users().create(userRepresentation);
+        if (response.getStatus() == Response.Status.CREATED.getStatusCode()) {
+            RoleRepresentation userRole = keycloak.realm(realm).roles().get("user").toRepresentation();
+            userId = response.getLocation().getPath().replace(".*/([^/]+)$", "$1");
+            keycloak.realm(realm).users().get(userId).roles().realmLevel().add(Arrays.asList(userRole));
+            UserRepresentation createdUser = keycloak.realm(realm).users().get(userId).toRepresentation();
 
+            SystemUser sUser = SystemUser.builder()
+                    .userId(userId)
+                    .keycloakId(createdUser.getId())
+                    .firstName(systemUserRequestDto.getFirstName())
+                    .lastName(systemUserRequestDto.getLastName())
+                    .email(systemUserRequestDto.getEmail())
+                    .contact(systemUserRequestDto.getContact())
+                    .isActive(false)
+                    .isAccountNonExpired(true)
+                    .isAccountNonLocked(true)
+                    .isCredentialsNonExpired(true)
+                    .isEnabled(true)
+                    .isEmailVerified(false)
+                    .createdAt(new Date().toInstant())
+                    .updatedAt(new Date().toInstant())
+                    .build();
+
+            SystemUser savedUser = systemUserRepository.save(sUser);
+            Otp createdOtp = Otp.builder()
+                    .propertyId(UUID.randomUUID().toString())
+                    .code(otpGenerator.generateOtp(5))
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .isVerified(false)
+                    .attempts(0)
+                    .build();
+            otpRepository.save(createdOtp);
+
+            //Send Email
+        }
     }
-    
+
     //the user will be created in keycloak
 
-    private  UserRepresentation mapUserRepository(SystemUserRequestDto systemUserRequestDto){
+    private UserRepresentation mapUserRepository(SystemUserRequestDto systemUserRequestDto) {
         UserRepresentation user = new UserRepresentation();
         user.setFirstName(systemUserRequestDto.getFirstName());
         user.setLastName(systemUserRequestDto.getLastName());

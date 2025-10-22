@@ -15,7 +15,7 @@ import java.time.Instant;
 public class SystemUser {
     @Id
     @Column(name = "user_id", length = 80, nullable = false)
-    private String Userid;
+    private String userId;
 
     @Column(name = "keycloak_id", length = 80, nullable = false)
     private String keycloakId;
