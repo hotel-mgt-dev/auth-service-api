@@ -8,6 +8,7 @@ import com.hotel_mgt_system.auth_service_api.exception.BadRequestException;
 import com.hotel_mgt_system.auth_service_api.exception.DuplicateEntryException;
 import com.hotel_mgt_system.auth_service_api.repository.OtpRepository;
 import com.hotel_mgt_system.auth_service_api.repository.SystemUserRepository;
+import com.hotel_mgt_system.auth_service_api.service.EmailService;
 import com.hotel_mgt_system.auth_service_api.service.SystemUserService;
 import com.hotel_mgt_system.auth_service_api.util.OtpGenerator;
 import jakarta.ws.rs.core.Response;
@@ -19,12 +20,14 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class SystemUserServiceImpl implements SystemUserService {
+
 
     @Value("${keycloak.config.realm}")
     private String realm;
@@ -34,9 +37,10 @@ public class SystemUserServiceImpl implements SystemUserService {
     private final KeycloakSecurityUtil keycloakSecurityUtil;
     private final OtpRepository otpRepository;
     private final OtpGenerator otpGenerator;
+    private final EmailService emailService;
 
     @Override
-    public void createSystemUser(SystemUserRequestDto systemUserRequestDto) {
+    public void createSystemUser(SystemUserRequestDto systemUserRequestDto) throws IOException {
         if (systemUserRequestDto.getFirstName() == null || systemUserRequestDto.getFirstName().trim().isEmpty()) {
             throw new BadRequestException("First name is required");
         }
@@ -116,6 +120,7 @@ public class SystemUserServiceImpl implements SystemUserService {
             otpRepository.save(createdOtp);
 
             //Send Email
+            emailService.sendUserSignUpVerificationCode(systemUserRequestDto.getEmail(),"Verify Your Email",createdOtp.getCode(),systemUserRequestDto.getFirstName());
         }
     }
 
