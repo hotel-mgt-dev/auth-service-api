@@ -31,9 +31,9 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public boolean sendUserSignUpVerificationCode(String toEmail, String subject, String otp, String firstName) throws IOException {
         String htmlBody = emailTemplateHelper.loadHtmlTemplate("templates/otpverification.html");
-        htmlBody = htmlBody.replace("{{firstName}}", firstName);
-        htmlBody = htmlBody.replace("{{otp}}", otp);
-        htmlBody = htmlBody.replace("{{year}}", String.valueOf(Year.now().getValue()));
+        htmlBody = htmlBody.replace("{firstName}", firstName);
+        htmlBody = htmlBody.replace("{otp}", otp);
+        htmlBody = htmlBody.replace("{year}", String.valueOf(Year.now().getValue()));
 
         Email from = new Email(senderEmail);
         Email to = new Email(toEmail);
@@ -55,5 +55,33 @@ public class EmailServiceImpl implements EmailService {
         }
         return  true;
 
+    }
+
+    @Override
+    public boolean sendHostPassword(String toEmail, String subject, String password, String firstName) throws IOException {
+        String htmlBody = emailTemplateHelper.loadHtmlTemplate("templates/host-init.html");
+        htmlBody = htmlBody.replace("{firstName}", firstName);
+        htmlBody = htmlBody.replace("{password}", password);
+        htmlBody = htmlBody.replace("{year}", String.valueOf(Year.now().getValue()));
+
+        Email from = new Email(senderEmail);
+        Email to = new Email(toEmail);
+        Content content = new Content("text/html", htmlBody);
+        Mail mail = new Mail(from, subject,to, content);
+
+        SendGrid sg = new SendGrid(apikey);
+        Request request = new Request();
+        try {
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            Response response = sg.api(request);
+
+        } catch (IOException e) {
+            // TODO: handle exception
+            throw e;
+
+        }
+        return  true;
     }
 }
