@@ -6,6 +6,7 @@ import com.hotel_mgt_system.auth_service_api.entity.Otp;
 import com.hotel_mgt_system.auth_service_api.entity.SystemUser;
 import com.hotel_mgt_system.auth_service_api.exception.BadRequestException;
 import com.hotel_mgt_system.auth_service_api.exception.DuplicateEntryException;
+import com.hotel_mgt_system.auth_service_api.exception.EntryNotFoundException;
 import com.hotel_mgt_system.auth_service_api.repository.OtpRepository;
 import com.hotel_mgt_system.auth_service_api.repository.SystemUserRepository;
 import com.hotel_mgt_system.auth_service_api.service.EmailService;
@@ -120,7 +121,7 @@ public class SystemUserServiceImpl implements SystemUserService {
             otpRepository.save(createdOtp);
 
             //Send Email
-            emailService.sendUserSignUpVerificationCode(systemUserRequestDto.getEmail(),"Verify Your Email",createdOtp.getCode(),systemUserRequestDto.getFirstName());
+            emailService.sendUserSignUpVerificationCode(systemUserRequestDto.getEmail(), "Verify Your Email", createdOtp.getCode(), systemUserRequestDto.getFirstName());
         }
     }
 
@@ -183,7 +184,7 @@ public class SystemUserServiceImpl implements SystemUserService {
 
             //create user in keycloak
 
-            UserRepresentation userRepresentation = mapUserRepository(systemUserRequestDto,true, true);
+            UserRepresentation userRepresentation = mapUserRepository(systemUserRequestDto, true, true);
             Response response = keycloak.realm(realm).users().create(userRepresentation);
             if (response.getStatus() == Response.Status.CREATED.getStatusCode()) {
                 RoleRepresentation userRole = keycloak.realm(realm).roles().get("host").toRepresentation();
@@ -209,20 +210,44 @@ public class SystemUserServiceImpl implements SystemUserService {
                         .build();
 
                 SystemUser savedUser = systemUserRepository.save(sUser);
-//                Otp createdOtp = Otp.builder()
-//                        .propertyId(UUID.randomUUID().toString())
-//                        .code(otpGenerator.generateOtp(5))
-//                        .createdAt(Instant.now())
-//                        .updatedAt(Instant.now())
-//                        .isVerified(false)
-//                        .attempts(0)
-//                        .build();
-//                otpRepository.save(createdOtp);
-
-                //Send Email
                 emailService.sendHostPassword(systemUserRequestDto.getEmail(), "Access system by using above password", systemUserRequestDto.getPassword(), systemUserRequestDto.getFirstName());
 
+
             }
+        }
+    }
+
+    /// send Otp
+    @Override
+    public void resend(String email, String type) {
+        try {
+            Optional<SystemUser> selectedUser = systemUserRepository.findByEmail(email);
+            if (selectedUser.isEmpty()) {
+                throw new EntryNotFoundException("Unable to find any user associate with the provided email address");
+            }
+
+            SystemUser systemUser = selectedUser.get();
+
+            if (type.equalsIgnoreCase("SIGNUP")) {
+
+                if (systemUser.isEmailVerified()) {
+                    throw new DuplicateEntryException("The email is already activated");
+                }
+            }
+
+            ///send new otp again
+            Otp selectedOtpObj = systemUser.getOtp();
+            String code = otpGenerator.generateOtp(5);
+
+            emailService.sendUserSignUpVerificationCode(systemUser.getEmail(), "Verify your email", code, systemUser.getFirstName());
+            selectedOtpObj.setAttempts(0);
+            selectedOtpObj.setCode(code);
+            selectedOtpObj.setIsVerified(false);
+            selectedOtpObj.setUpdatedAt(new Date().toInstant());
+
+
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
         }
     }
 }
