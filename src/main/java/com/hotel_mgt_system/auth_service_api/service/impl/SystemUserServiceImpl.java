@@ -250,4 +250,75 @@ public class SystemUserServiceImpl implements SystemUserService {
             throw new RuntimeException(e.getMessage());
         }
     }
+
+    @Override
+    public void forgotPasswordSendVerificationCode(String email, String password) {
+
+        try {
+            Optional<SystemUser> selectedUser = systemUserRepository.findByEmail(email);
+            if (selectedUser.isEmpty()) {
+                throw new EntryNotFoundException("Unable to find any user associate with the provided email address");
+            }
+
+            SystemUser systemUser = selectedUser.get();
+
+            Keycloak keycloak = null;
+            keycloak = keycloakSecurityUtil.getKeycloakInstance();
+            UserRepresentation existingUser = keycloak.realm(realm).users().search(email).stream().findFirst().orElse(null);
+
+            if (existingUser != null) {
+                throw new EntryNotFoundException("Unable to find any user associate with the provided email address");
+            }
+
+            ///send new otp again
+            Otp selectedOtpObj = systemUser.getOtp();
+            String code = otpGenerator.generateOtp(5);
+
+
+            selectedOtpObj.setAttempts(0);
+            selectedOtpObj.setCode(code);
+            selectedOtpObj.setIsVerified(false);
+            selectedOtpObj.setUpdatedAt(new Date().toInstant());
+
+            emailService.sendUserSignUpVerificationCode(systemUser.getEmail(), "Verify your email to reset password", code, systemUser.getFirstName());
+
+
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+
+    }
+
+    @Override
+    public boolean verifyReset(String email, String otp) {
+        try {
+            Optional<SystemUser> selectedUser = systemUserRepository.findByEmail(email);
+            if (selectedUser.isEmpty()) {
+                throw new EntryNotFoundException("Unable to find any user associate with the provided email address");
+            }
+
+            SystemUser systemUser = selectedUser.get();
+            Otp otpObj = systemUser.getOtp();
+            if (otpObj.getCode().equals(otp)) {
+
+                //otpRepository.deleteById(otpObj.getPropertyId());
+                otpObj.setAttempts(otpObj.getAttempts() + 1);
+                otpObj.setUpdatedAt(new Date().toInstant());
+                otpObj.setIsVerified(true);
+                otpRepository.save(otpObj);
+                return true;
+            } else {
+                if (otpObj.getAttempts() >= 5) {
+                    resend(email, "PASSWORD");
+                    throw new BadRequestException("You have a new verification code");
+                }
+                otpObj.setAttempts(otpObj.getAttempts() + 1);
+                otpObj.setUpdatedAt(new Date().toInstant());
+                otpRepository.save(otpObj);
+                return false;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
