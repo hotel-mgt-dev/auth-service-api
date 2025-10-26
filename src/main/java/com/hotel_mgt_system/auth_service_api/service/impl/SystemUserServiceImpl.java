@@ -351,5 +351,61 @@ public class SystemUserServiceImpl implements SystemUserService {
         }
         throw new EntryNotFoundException("Unable to find any user associate with the provided email address");
     }
+
+    @Override
+    public boolean verifyEmail(String otp, String email) {
+        Optional<SystemUser> selectedUserObj = systemUserRepository.findByEmail(email);
+        if (selectedUserObj.isEmpty()) {
+            throw new EntryNotFoundException("Unable to find any user associate with the provided email address");
+        }
+
+        SystemUser systemUser = selectedUserObj.get();
+        Otp otpObj = systemUser.getOtp();
+
+        if (otpObj.getIsVerified()) {
+            throw new BadRequestException("This Otp is already used");
+        }
+
+        if (otpObj.getAttempts() >= 5) {
+            resend(email, "SIGNUP");
+            return false;
+        }
+
+        if (otpObj.getCode().equals(otp)) {
+            UserRepresentation keycloakUser = keycloakSecurityUtil.getKeycloakInstance().realm(realm)
+                    .users().search(email).stream().findFirst()
+                    .orElseThrow(() -> new EntryNotFoundException("Unable to find any user associate with the provided email address"));
+
+            keycloakUser.setEmailVerified(true);
+            keycloakUser.setEnabled(true);
+
+            keycloakSecurityUtil.getKeycloakInstance().realm(realm).users().get(keycloakUser.getId()).update(keycloakUser);
+
+            systemUser.setEmailVerified(true);
+            systemUser.setEnabled(true);
+            systemUser.setActive(true);
+//            systemUser.setUpdatedAt(new Date().toInstant());
+
+            systemUserRepository.save(systemUser);
+
+            otpObj.setIsVerified(true);
+            otpObj.setAttempts(otpObj.getAttempts() + 1);
+            otpRepository.save(otpObj);
+            return true;
+
+
+        } else {
+
+            if (otpObj.getAttempts() >= 5) {
+                resend(email, "SIGNUP");
+                return false;
+            }
+            otpObj.setAttempts(otpObj.getAttempts() + 1);
+            otpRepository.save(otpObj);
+
+        }
+        return false;
+
+    }
 }
 
