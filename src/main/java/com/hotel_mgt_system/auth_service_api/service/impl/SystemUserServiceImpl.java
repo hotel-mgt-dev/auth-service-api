@@ -1,6 +1,7 @@
 package com.hotel_mgt_system.auth_service_api.service.impl;
 
 import com.hotel_mgt_system.auth_service_api.config.KeycloakSecurityUtil;
+import com.hotel_mgt_system.auth_service_api.dto.request.PasswordRequestDto;
 import com.hotel_mgt_system.auth_service_api.dto.request.SystemUserRequestDto;
 import com.hotel_mgt_system.auth_service_api.entity.Otp;
 import com.hotel_mgt_system.auth_service_api.entity.SystemUser;
@@ -15,6 +16,7 @@ import com.hotel_mgt_system.auth_service_api.util.OtpGenerator;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -321,4 +323,33 @@ public class SystemUserServiceImpl implements SystemUserService {
             return false;
         }
     }
+
+    @Override
+    public boolean passwordReset(PasswordRequestDto passwordRequestDto) {
+        Optional<SystemUser> selectedUserObj = systemUserRepository.findByEmail(passwordRequestDto.getEmail());
+        if (selectedUserObj.isPresent()) {
+            SystemUser systemUser = selectedUserObj.get();
+            Otp otpObj = systemUser.getOtp();
+            Keycloak keycloak = keycloakSecurityUtil.getKeycloakInstance();
+            List<UserRepresentation> KeyCloakUsers = keycloak.realm(realm).users().search(systemUser.getEmail());
+            if (!KeyCloakUsers.isEmpty() && otpObj.getCode().equals(passwordRequestDto.getCode())) {
+                UserRepresentation keyCloakUser = KeyCloakUsers.get(0);
+                UserResource userResource = keycloak.realm(realm).users().get(keyCloakUser.getId());
+                CredentialRepresentation newPass = new CredentialRepresentation();
+                newPass.setType(CredentialRepresentation.PASSWORD);
+                newPass.setValue(passwordRequestDto.getPassword());
+                newPass.setTemporary(false);
+                userResource.resetPassword(newPass);
+
+                systemUser.setUpdatedAt(new Date().toInstant());
+                systemUserRepository.save(systemUser);
+
+                return true;
+
+            }
+            throw new BadRequestException("Try Again");
+        }
+        throw new EntryNotFoundException("Unable to find any user associate with the provided email address");
+    }
 }
+

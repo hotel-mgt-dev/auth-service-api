@@ -1,5 +1,6 @@
 package com.hotel_mgt_system.auth_service_api.service;
 
+import com.hotel_mgt_system.auth_service_api.dto.request.PasswordRequestDto;
 import com.hotel_mgt_system.auth_service_api.dto.request.SystemUserRequestDto;
 
 import java.io.IOException;
@@ -12,5 +13,6 @@ public interface SystemUserService {
     public void resend(String email,String type) ;
     public void forgotPasswordSendVerificationCode(String email, String password);
     public boolean verifyReset(String email, String otp);
+    public boolean passwordReset(PasswordRequestDto passwordRequestDto);
 
 }
