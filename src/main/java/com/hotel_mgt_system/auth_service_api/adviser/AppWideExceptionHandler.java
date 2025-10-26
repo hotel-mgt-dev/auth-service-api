@@ -2,6 +2,7 @@ package com.hotel_mgt_system.auth_service_api.adviser;
 
 
 import com.hotel_mgt_system.auth_service_api.exception.EntryNotFoundException;
+import com.hotel_mgt_system.auth_service_api.exception.UnAuthorizedException;
 import com.hotel_mgt_system.auth_service_api.util.StandardResponseDto;
 import jakarta.ws.rs.BadRequestException;
 import org.springframework.http.HttpStatus;
@@ -26,4 +27,14 @@ public class AppWideExceptionHandler {
                 HttpStatus.NOT_FOUND
         );
     }
+
+    @ExceptionHandler(UnAuthorizedException.class)
+    public ResponseEntity<StandardResponseDto> handleUnAuthorizedException(Exception e) {
+        return new ResponseEntity(
+                new StandardResponseDto(401, e.getMessage(), e),
+                HttpStatus.NOT_FOUND
+        );
+    }
+
+
 }

@@ -1,5 +1,6 @@
 package com.hotel_mgt_system.auth_service_api.service;
 
+import com.hotel_mgt_system.auth_service_api.dto.request.LoginRequestDto;
 import com.hotel_mgt_system.auth_service_api.dto.request.PasswordRequestDto;
 import com.hotel_mgt_system.auth_service_api.dto.request.SystemUserRequestDto;
 
@@ -15,5 +16,6 @@ public interface SystemUserService {
     public boolean verifyReset(String email, String otp);
     public boolean passwordReset(PasswordRequestDto passwordRequestDto);
     public boolean verifyEmail(String otp, String email);
+    public Object userLogin(LoginRequestDto loginRequestDto);
 
 }
