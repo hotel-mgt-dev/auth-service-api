@@ -1,6 +1,7 @@
 package com.hotel_mgt_system.auth_service_api.controller;
 
 import com.hotel_mgt_system.auth_service_api.config.JwtService;
+import com.hotel_mgt_system.auth_service_api.dto.request.PasswordRequestDto;
 import com.hotel_mgt_system.auth_service_api.dto.request.SystemUserRequestDto;
 import com.hotel_mgt_system.auth_service_api.service.SystemUserService;
 import com.hotel_mgt_system.auth_service_api.util.StandardResponseDto;
@@ -49,6 +50,14 @@ public class UserController {
         return new ResponseEntity<>(
                 new StandardResponseDto(isVerified?200:400, isVerified?"Verified":"Try again",isVerified),
                 isVerified?HttpStatus.OK:HttpStatus.BAD_REQUEST);
+    }
+
+    @PostMapping("/visitors/password-reset")
+    public ResponseEntity<StandardResponseDto> passwordReset(@RequestBody PasswordRequestDto passwordRequestDto) throws IOException {
+        boolean isChanged =  systemUserService.passwordReset(passwordRequestDto);
+        return new ResponseEntity<>(
+                new StandardResponseDto(isChanged?200:400, isChanged?"hanged":"Try again",isChanged),
+                isChanged?HttpStatus.OK:HttpStatus.BAD_REQUEST);
     }
 
 
