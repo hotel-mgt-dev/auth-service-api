@@ -263,7 +263,7 @@ public class SystemUserServiceImpl implements SystemUserService {
     }
 
     @Override
-    public void forgotPasswordSendVerificationCode(String email, String password) {
+    public void forgotPasswordSendVerificationCode(String email) {
 
         try {
             Optional<SystemUser> selectedUser = systemUserRepository.findByEmail(email);
