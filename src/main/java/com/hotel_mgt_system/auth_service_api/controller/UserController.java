@@ -20,8 +20,7 @@ public class UserController {
     private final JwtService jwtService;
 
     @PostMapping("/visitors/signup")
-    public ResponseEntity<StandardResponseDto> createSystemUser(
-            @RequestBody SystemUserRequestDto systemUserRequestDto) throws IOException {
+    public ResponseEntity<StandardResponseDto> createSystemUser(@RequestBody SystemUserRequestDto systemUserRequestDto) throws IOException {
         systemUserService.createSystemUser(systemUserRequestDto);
         return new ResponseEntity<>(
                 new StandardResponseDto(201, "User account was created", null),
@@ -29,8 +28,7 @@ public class UserController {
     }
 
     @PostMapping("/visitors/resend")
-    public ResponseEntity<StandardResponseDto> resend(
-            @RequestParam String email, @RequestParam String type) throws IOException {
+    public ResponseEntity<StandardResponseDto> resend(@RequestParam String email, @RequestParam String type) throws IOException {
         systemUserService.resend(email,type);
         return new ResponseEntity<>(
                 new StandardResponseDto(200, "Please check your email", null),
@@ -38,13 +36,21 @@ public class UserController {
     }
 
     @PostMapping("/visitors/forgot-password-request-code")
-    public ResponseEntity<StandardResponseDto> forgotPasswordRequest(
-            @RequestParam String email) throws IOException {
+    public ResponseEntity<StandardResponseDto> forgotPasswordRequest(@RequestParam String email) throws IOException {
         systemUserService.forgotPasswordSendVerificationCode(email);
         return new ResponseEntity<>(
                 new StandardResponseDto(200, "Please check your email", null),
                 HttpStatus.OK);
     }
+
+    @PostMapping("/visitors/verify-reset")
+    public ResponseEntity<StandardResponseDto> verifyReset(@RequestParam String email, @RequestParam String otp) throws IOException {
+        boolean isVerified = systemUserService.verifyReset(email,otp);
+        return new ResponseEntity<>(
+                new StandardResponseDto(isVerified?200:400, isVerified?"Verified":"Try again",isVerified),
+                isVerified?HttpStatus.OK:HttpStatus.BAD_REQUEST);
+    }
+
 
 
 }
