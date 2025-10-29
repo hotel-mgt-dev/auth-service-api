@@ -7,10 +7,7 @@ import com.hotel_mgt_system.auth_service_api.util.StandardResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 
@@ -29,6 +26,15 @@ public class UserController {
         return new ResponseEntity<>(
                 new StandardResponseDto(201, "User account was created", null),
                 HttpStatus.CREATED);
+    }
+
+    @PostMapping("/visitors/resend")
+    public ResponseEntity<StandardResponseDto> resend(
+            @RequestParam String email, @RequestParam String type) throws IOException {
+        systemUserService.resend(email,type);
+        return new ResponseEntity<>(
+                new StandardResponseDto(200, "Please check your email", null),
+                HttpStatus.OK);
     }
 
 
