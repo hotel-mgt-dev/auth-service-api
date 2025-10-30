@@ -1,6 +1,7 @@
 package com.hotel_mgt_system.auth_service_api.controller;
 
 import com.hotel_mgt_system.auth_service_api.config.JwtService;
+import com.hotel_mgt_system.auth_service_api.dto.request.LoginRequestDto;
 import com.hotel_mgt_system.auth_service_api.dto.request.PasswordRequestDto;
 import com.hotel_mgt_system.auth_service_api.dto.request.SystemUserRequestDto;
 import com.hotel_mgt_system.auth_service_api.service.SystemUserService;
@@ -56,9 +57,28 @@ public class UserController {
     public ResponseEntity<StandardResponseDto> passwordReset(@RequestBody PasswordRequestDto passwordRequestDto) throws IOException {
         boolean isChanged =  systemUserService.passwordReset(passwordRequestDto);
         return new ResponseEntity<>(
-                new StandardResponseDto(isChanged?200:400, isChanged?"hanged":"Try again",isChanged),
+                new StandardResponseDto(isChanged?200:400, isChanged?"Changed":"Try again",isChanged),
                 isChanged?HttpStatus.OK:HttpStatus.BAD_REQUEST);
     }
+
+    @PostMapping("/visitors/verify-email")
+    public ResponseEntity<StandardResponseDto> verifyEmail(@RequestParam String otp, @RequestParam String email) throws IOException {
+        boolean isVerifed =  systemUserService.verifyEmail(otp,email);
+        return new ResponseEntity<>(
+                new StandardResponseDto(isVerifed?200:400, isVerifed?"Verified":"Try again",isVerifed),
+                isVerifed?HttpStatus.OK:HttpStatus.BAD_REQUEST);
+    }
+
+    @PostMapping("/visitors/user-login")
+    public ResponseEntity<StandardResponseDto> userLogin(@RequestBody LoginRequestDto loginRequestDto) throws IOException {
+        return new ResponseEntity<>(
+                new StandardResponseDto(200, "Login successful", systemUserService.userLogin(loginRequestDto)),
+                HttpStatus.OK);
+    }
+
+
+
+
 
 
 

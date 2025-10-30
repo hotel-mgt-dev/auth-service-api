@@ -40,16 +40,13 @@ public class KeycloakSecurityUtil {
                     .realm(realm)
                     .clientId(clientId)
                     .grantType(grantType)
-                    .clientSecret(secret)
                     .username(username)
                     .password(password)
+                    .clientSecret(secret)
                     .build();
         }
         return  keycloak;
 
     }
-
-
-
 
 }

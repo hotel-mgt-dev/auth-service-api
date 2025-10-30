@@ -99,7 +99,7 @@ public class SystemUserServiceImpl implements SystemUserService {
         Response response = keycloak.realm(realm).users().create(userRepresentation);
         if (response.getStatus() == Response.Status.CREATED.getStatusCode()) {
             RoleRepresentation userRole = keycloak.realm(realm).roles().get("user").toRepresentation();
-            userId = response.getLocation().getPath().replace(".*/([^/]+)$", "$1");
+            userId = response.getLocation().getPath().replaceAll(".*/([^/]+)$", "$1");
             keycloak.realm(realm).users().get(userId).roles().realmLevel().add(Arrays.asList(userRole));
             UserRepresentation createdUser = keycloak.realm(realm).users().get(userId).toRepresentation();
 
@@ -127,6 +127,7 @@ public class SystemUserServiceImpl implements SystemUserService {
                     .createdAt(Instant.now())
                     .updatedAt(Instant.now())
                     .isVerified(false)
+                    .systemUser(savedUser)
                     .attempts(0)
                     .build();
             otpRepository.save(createdOtp);
@@ -277,7 +278,7 @@ public class SystemUserServiceImpl implements SystemUserService {
             keycloak = keycloakSecurityUtil.getKeycloakInstance();
             UserRepresentation existingUser = keycloak.realm(realm).users().search(email).stream().findFirst().orElse(null);
 
-            if (existingUser != null) {
+            if (existingUser == null) {
                 throw new EntryNotFoundException("Unable to find any user associate with the provided email address");
             }
 
@@ -290,6 +291,7 @@ public class SystemUserServiceImpl implements SystemUserService {
             selectedOtpObj.setCode(code);
             selectedOtpObj.setIsVerified(false);
             selectedOtpObj.setUpdatedAt(new Date().toInstant());
+            otpRepository.save(selectedOtpObj);
 
             emailService.sendUserSignUpVerificationCode(systemUser.getEmail(), "Verify your email to reset password", code, systemUser.getFirstName());
 
